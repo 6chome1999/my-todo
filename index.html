@@ -466,6 +466,7 @@
         <button class="btn-sync" style="background:#3A3A3C;flex:1;" onclick="location.reload()">重新載入</button>
         <span id="swVerBadge" style="font-size:11px;font-weight:600;color:#8E8E93;background:#2C2C2E;padding:6px 10px;border-radius:9px;white-space:nowrap;flex-shrink:0;">讀取中…</span>
       </div>
+      <button class="btn-sync" id="clearDataBtn" style="background:#3A2628;color:#FF453A;border:0.5px solid rgba(255,69,58,.45);width:100%;margin-top:8px;" onclick="clearLocalData()">清除本機資料</button>
     </div>
   </div>
 </div>
@@ -553,7 +554,7 @@
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzLLptVvCOAvpeyFo6SgSpH8qsZosMp2AGI1Otg0fdbZkLOTMe_bacx1Op69e6fwIqk/exec";
 
-const APP_VERSION = "todo-v398"; // 與 sw.js 的 CACHE_NAME 保持一致
+const APP_VERSION = "todo-v399"; // 與 sw.js 的 CACHE_NAME 保持一致
 
 function checkLogin() { return true; }
 function doLogout() { location.reload(); }
@@ -1615,6 +1616,34 @@ function playSound(type) {
 }
 function toggleSound() { _soundEnabled=!_soundEnabled; localStorage.setItem('soundEnabled',_soundEnabled); updateSoundBtn(); playSound('tap'); }
 function updateSoundBtn() { const btn=document.getElementById('soundBtn'); if(!btn) return; btn.textContent=_soundEnabled?'🔊':'🔇'; btn.classList.toggle('on',_soundEnabled); }
+
+// 清除本機所有資料（localStorage + Service Worker 快取），兩段式確認後重新載入
+// 雲端資料不受影響，重新載入後會由 pullFromCloud() 重新拉回；但「尚未同步」的佇列會永久遺失
+async function clearLocalData() {
+  const pendingN = pendingQueue.length;
+  let msg1 = '確定要清除本機所有資料嗎？\n\n會清掉本機的任務、分類、設定與離線快取。';
+  if (pendingN > 0) {
+    msg1 += `\n\n⚠️ 目前還有 ${pendingN} 筆操作「尚未同步到雲端」，清除後將永久遺失。\n建議先按「立即同步」成功後再清除。`;
+  } else {
+    msg1 += '\n\n雲端資料不受影響，清除後會重新從雲端載入。';
+  }
+  if (!confirm(msg1)) return;
+  // 第二段再確認
+  if (!confirm('再次確認：此動作無法復原，確定清除本機資料並重新載入？')) return;
+  try { playSound('delete'); } catch(e) {}
+  try {
+    localStorage.clear();
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch(e) {}
+  location.reload();
+}
 
 function openAdd() {
   document.getElementById('editId').value=""; document.getElementById('taskInput').value="";
