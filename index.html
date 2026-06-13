@@ -111,13 +111,12 @@
     .scat-dot.show{display:block;}
     #sideFoot {
       flex-shrink:0;width:100%;
-      display:none;flex-direction:column;
+      display:flex;flex-direction:column;   /* 修正：改為預設顯示，窄側欄也看得到同步/分類鈕（原本只有最寬側欄才顯示，使用者找不到入口） */
       align-items:flex-start;
       gap:8px;padding:6px 0 calc(6px + var(--sab)) 14px;
       background:var(--sidebar-bg);border-top:0.5px solid var(--sep);
       overflow:hidden;
     }
-    #sidebar.wide #sideFoot { display:flex; }
     .sbtn{
       margin-left:0 !important;width:44px;height:44px;
       border-radius:12px;background:#2C2C2E;border:none;
@@ -554,7 +553,7 @@
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzLLptVvCOAvpeyFo6SgSpH8qsZosMp2AGI1Otg0fdbZkLOTMe_bacx1Op69e6fwIqk/exec";
 
-const APP_VERSION = "todo-v399"; // 與 sw.js 的 CACHE_NAME 保持一致
+const APP_VERSION = "todo-v400"; // 與 sw.js 的 CACHE_NAME 保持一致
 
 function checkLogin() { return true; }
 function doLogout() { location.reload(); }
