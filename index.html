@@ -553,7 +553,7 @@
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzLLptVvCOAvpeyFo6SgSpH8qsZosMp2AGI1Otg0fdbZkLOTMe_bacx1Op69e6fwIqk/exec";
 
-const APP_VERSION = "todo-v400"; // 與 sw.js 的 CACHE_NAME 保持一致
+const APP_VERSION = "todo-v401"; // 與 sw.js 的 CACHE_NAME 保持一致
 
 function checkLogin() { return true; }
 function doLogout() { location.reload(); }
@@ -859,15 +859,21 @@ async function pullFromCloud(reason, attempt=1) {
     }));
     if (Array.isArray(resC)) {
       const filtered = resC.filter(c => c && (typeof c === 'string' ? c !== "Category Name" : c.name !== "Category Name"));
-      const hasSortOrder = filtered.some(c => typeof c === 'object' && c.sortOrder !== undefined);
-      const toObj = c => typeof c === 'string' ? {name:c, rowId:null, color:'', sortOrder:0} : {name:c.name, rowId:c.RowID||c.rowId||null, color:c.color||c.Color||'', sortOrder:c.sortOrder||c.SortOrder||0};
-      if (hasSortOrder) { filtered.sort((a, b) => (a.sortOrder||a.SortOrder||0) - (b.sortOrder||b.SortOrder||0)); allC = filtered.map(toObj); catOrder = allC.map(c=>c.name); }
-      else { allC = filtered.map(toObj); applyCatOrder(); }
-      allC.forEach(c => {
-        if (c.color) catColors[c.name] = c.color;
-        else delete catColors[c.name];
-      });
-      saveCatColors();
+      // 防護：雲端分類為空、但本地仍有分類時，極可能是後端 Categories 分頁異常（getCategories 安靜回空），
+      // 不要用空資料覆蓋本地分類，以免使用者剛新增的分類被同步清空。
+      if (filtered.length === 0 && allC.length > 0) {
+        pushLog('雲端分類為空，已保留本地分類（後端 Categories 分頁可能異常，請檢查試算表）', 'warn');
+      } else {
+        const hasSortOrder = filtered.some(c => typeof c === 'object' && c.sortOrder !== undefined);
+        const toObj = c => typeof c === 'string' ? {name:c, rowId:null, color:'', sortOrder:0} : {name:c.name, rowId:c.RowID||c.rowId||null, color:c.color||c.Color||'', sortOrder:c.sortOrder||c.SortOrder||0};
+        if (hasSortOrder) { filtered.sort((a, b) => (a.sortOrder||a.SortOrder||0) - (b.sortOrder||b.SortOrder||0)); allC = filtered.map(toObj); catOrder = allC.map(c=>c.name); }
+        else { allC = filtered.map(toObj); applyCatOrder(); }
+        allC.forEach(c => {
+          if (c.color) catColors[c.name] = c.color;
+          else delete catColors[c.name];
+        });
+        saveCatColors();
+      }
     }
     saveLocal(); pushLog(`完成：${allT.length} 任務 / ${allC.length} 分類`, 'success');
     renderAll(); // 成功後才執行，且只執行一次
