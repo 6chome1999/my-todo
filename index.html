@@ -411,7 +411,7 @@
         <div class="frow">
           <div style="flex:2"><input type="date" id="dateInput" class="f" style="margin-bottom:0"></div>
           <div style="flex:2"><select id="catSelect" class="f" style="margin-bottom:0"></select></div>
-          <div style="flex:1"><input type="number" id="priInput" class="f" placeholder="P#" min="1" max="99" style="margin-bottom:0;text-align:center" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(0,2);if(this.value>99)this.value=99;if(this.value<1&&this.value!=='')this.value=1;"></div>
+          <div style="flex:1"><input type="number" id="priInput" class="f" placeholder="P#" min="1" max="99" style="margin-bottom:0;text-align:center" onfocus="this.select()" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length>2)this.value=this.value.slice(-2);if(Number(this.value)>99)this.value='99';if(this.value!==''&&Number(this.value)<1)this.value='1';"></div>
         </div>
         <textarea id="noteInput" class="f" placeholder="備註（選填）" style="margin-bottom:4px;height:96px"></textarea>
         <button class="btn-p" onclick="save()">儲存</button>
@@ -553,7 +553,7 @@
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzLLptVvCOAvpeyFo6SgSpH8qsZosMp2AGI1Otg0fdbZkLOTMe_bacx1Op69e6fwIqk/exec";
 
-const APP_VERSION = "todo-v401"; // 與 sw.js 的 CACHE_NAME 保持一致
+const APP_VERSION = "todo-v402"; // 與 sw.js 的 CACHE_NAME 保持一致
 
 function checkLogin() { return true; }
 function doLogout() { location.reload(); }
