@@ -1,4 +1,4 @@
-const CACHE_NAME = 'todo-v404';
+const CACHE_NAME = 'todo-v500.40';
 
 const urlsToCache = [
   './',
@@ -9,7 +9,7 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', e => {
-  self.skipWaiting(); 
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('[Service Worker] 正在快取所有資源');
