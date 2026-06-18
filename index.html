@@ -1087,7 +1087,7 @@
 <script>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzLLptVvCOAvpeyFo6SgSpH8qsZosMp2AGI1Otg0fdbZkLOTMe_bacx1Op69e6fwIqk/exec";
 
-const APP_VERSION = "todo-v500.40"; // v500.40 客戶管理/選客戶改上方清單視窗(搜尋不被鍵盤蓋/不誤關/單擊即選)
+const APP_VERSION = "todo-v500.41"; // v500.41 移出群組(leaveCustomerGroup)歸還 origin===自己 的共用聯絡資料
 const TOKEN_TTL = 30 * 24 * 60 * 60 * 1000;
 
 // ── 修正方案 v500 新增常數 ──
@@ -5956,15 +5956,30 @@ async function doGroupWith(targetName) {
   }
 }
 async function leaveCust(name) {
-  if (!confirm(`把「${name}」移出群組？\n（它會變回單獨客戶，原本共用的聯絡資料將不再顯示在它身上）`)) return;
+  if (!confirm(`把「${name}」移出群組？\n（會變回單獨客戶；自己當初提供的聯絡資料會搬回它身上，其餘共用資料留在原組）`)) return;
   playSound('tap');
   const c = allCust.find(x => x.name === name);
+  const oldGid = c && c.groupId ? String(c.groupId) : '';
+  // v500.41: origin===自己 的共用聯絡項本機即時搬回自己、清 origin（仿 detachCust）
+  if (oldGid) {
+    allContacts.forEach(x => {
+      if (String(x.groupKey) === oldGid && String(x.origin || '') === String(name)) {
+        x.groupKey = String(name); x.origin = '';
+      }
+    });
+  }
   if (c) { c.groupId = ''; c.updatedAt = Date.now(); }
   saveLocal();
+  try { localStorage.setItem('contactsCache', JSON.stringify(allContacts)); } catch(e) {}
   renderCusList(); render();
   try {
-    await callGasAction('leaveCustomerGroup', { name });
-    pushLog && pushLog(`已移出群組：${name}`, 'success');
+    const res = await callGasAction('leaveCustomerGroup', { name });
+    if (res && res.status === 'success') {
+      pushLog && pushLog(`已移出群組：${name}`, 'success');
+      if (typeof refreshContactsCache === 'function') await refreshContactsCache();
+    } else {
+      pushLog && pushLog(`移出群組未完成：${res && res.message ? res.message : '未知'}`, 'warn');
+    }
   } catch(e) {
     pushLog && pushLog(`移出群組推送失敗：${e.message}`, 'warn');
   }
